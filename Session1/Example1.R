@@ -8,7 +8,6 @@
 ###                          DATE:21 SEPT 2023                           xxx
 ###                                                                      xxx
 ###xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 ###xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -29,7 +28,6 @@ banner("Section #1: ....", emph = FALSE,bandChar="-", numLines =2,leftSideHashes
 
 
 ##****************************************************************
-
 ##****************************************************************
 ##                                                              **
 ##                       Section #1: ....                       **
@@ -43,19 +41,15 @@ banner("Section #1: ....", emph = FALSE,bandChar="-", numLines =2,leftSideHashes
 
 # 2- work clean
 
-
-
 library(readr)
 library(tidyverse)
 library(stringr)
 library(dplyr)
 
 #Import the
-metadata<- read_delim("synthetic_bladder_cancer_metadata_students.csv",
-                      
+metadata<- read_delim("synthetic_bladder_cancer_metadata_students.csv",         
                       delim = ","
-                      
-)# include, skip = 1 if you want to exclude the first line
+                      )# include, skip = 1 if you want to exclude the first line
 
 
 data_csv <- read.csv(csv_file_path)
@@ -97,8 +91,6 @@ height <- 1.81
 
 #Assign to weight 86
 weight <- 86
-
-
 
 
 #assign a character value to anyword
