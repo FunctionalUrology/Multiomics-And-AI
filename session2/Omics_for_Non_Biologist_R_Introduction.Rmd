@@ -1,0 +1,451 @@
+---
+title: "Data Cleaning and Filtering"
+subtitle: "Second Session of Omice for Non-Biologists"
+author: Ali Hashemi Gheinani^[DBMR, Bern University, Bern, Switzerland, Boston Children's Hospital, Harvard Medical School, Broad Institute of MIT and Harvard,Massachusetts, USA,  Ali.HashemiGheinani@childrens.harvard.edu , ali.hashemi@unibe.ch], Akshay Akshay^[DBMR, Bern University, Bern, Switzerland akshay.akshay@unibe.ch].
+output: 
+  html_document:
+    code_folding: show
+    self_contained: true
+    toc: true
+    toc_float: true
+date: "`r Sys.Date()`"
+---
+
+```{r message=FALSE, warning = FALSE, include=FALSE, echo=FALSE, eval=TRUE}
+library(rmarkdown)
+library(readr)
+library(dplyr)
+library(formattable)
+library(bannerCommenter)
+library(knitr)  # for kable
+library(rmdformats)
+library(prettydoc)
+library(hrbrthemes)
+library(tint)
+library(tufte)
+library(klippy) # The klippy package enhances R Markdown HTML documents with copy to clipboard buttons
+```
+
+
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(color = 'darkred',
+               all_precode = FALSE,
+               position = c("top", "left"),
+               tooltip_message = "Copy code",
+               tooltip_success = "Copied!")
+```
+
+## Intro
+
+In this session, we'll dive into the crucial realm of data cleaning in R, a fundamental step in data analysis. Data quality is paramount, especially when dealing with categorical variables like blood types in biological research. We'll explore how to identify and handle values that don't belong to predefined categories, which can often sneak into your datasets due to various errors. Using filtering joins like anti-join and semi-join from the dplyr package, we'll learn how to pinpoint and exclude these rogue data points. By the end of this session, you'll be equipped with the tools to ensure your data stays squeaky clean, making your analyses in R not only more accurate but also smoother and more reliable. So, let's roll up our sleeves and embark on this exciting journey of data cleaning and filtering!
+
+
+Defining Working Directory   
+```{r message=TRUE, warning = FALSE}
+setwd("C:/Users/hashemi/Documents/Teaching/Omics for non-Biologists/Omics_AI_Master_Program")
+```
+
+
+### Section #1:Effective Project Management in RStudio for Experimental Projects"
+Creating a dedicated RStudio project for each experimental project offers the advantage of easily managing and retrieving project-related data and code.
+Here's how to do it in RStudio:
+
+* Open RStudio*
+* Go to the "File" menu at the top-left corner of the RStudio window.
+* Select "New Project" and then choose "New Directory."
+* Choose Project Type: Select "New Project" and then choose "New Directory."
+* Click "Next."
+* Name Your Project: Enter a name for your project in the "Directory name" field. This will be the name of your project's main folder.
+* Choose the location where you want to create this project folder by clicking the "Browse" button or entering the path manually.
+* Choose Project Type: You can choose from different project types, such as "Empty Project," "Existing Directory" (if you already have a project folder), or "Version Control" (if you're using Git or SVN). 
+* Click "Create Project."
+
+RStudio will create a new project directory with the name you specified. This directory will be your project's main workspace.
+
+
+### Section #2:Organization of folders in RStudio for Experimental Projects"
+Organizing your project folders is essential, especially when working with biological data in RStudio. Proper folder organization enhances efficiency, collaboration, and the overall management of your research. It's recommended to create subfolders with descriptive names, such as "1_rawdata," "2_metadata," "3_references," "4_results," "5_logs," "6_script," and "7_RData," as suggested in the provided code snippet. These subfolders serve specific purposes:
+
+- Project Directory
+  - 1_rawdata
+  - 2_metadata
+  - 3_references
+  - 4_results
+  - 5_logs
+  - 6_script
+  - 7_RData
+  
+  
+* 1_rawdata: Store the original biological data files obtained from experiments. Ex. "experiment_data.csv" (Raw data from experiments), sequence_reads.fastq" (Raw DNA sequencing data)
+* 2_metadata: Keep metadata files that describe details about the data, such as sample information, experimental conditions, and data sources. Ex. sample_info.csv" (Metadata containing sample details)
+
+* 3_references": Store any reference documents, literature, or papers related to your biological study, facilitating easy access to relevant information.
+* 4_results: Save the results of your data analysis, which may include tables, figures, and plots.
+* 5_logs: Maintain logs or records of your activities, including any issues encountered, code modifications, or debugging notes.
+* 6_script: Organize R scripts and code files used for data processing, analysis, and visualization. Keeping these files separate enhances code readability and organization.
+* 7_RData: Save R workspace files using `save.image(file = "YOUR_PROJECT_NAME.RData")` for quick data retrieval without re-running code, ensuring the preservation of your data state. You can load the data back by `load(file = "YOUR_PROJECT_NAME.RData")`
+
+You can use this code to generate them in your working directory:
+```R
+subfolder_names <- c("1_rawdata", "2_metadata", "3_references", "4_results", "5_logs", "6_script", "7_RData")
+
+# Get the current working directory
+current_directory <- getwd()
+
+# Create subfolders in the current working directory
+for (j in 1:length(subfolder_names)) {
+  folder <- dir.create(file.path(current_directory, subfolder_names[j]))
+}
+```
+
+Including a `sessionInfo()` section at the end of your R script documentation is a good practice as it provides information about the R environment and loaded packages, which can be helpful for reproducibility and debugging.
+By structuring your project folders in this way, you create a systematic and organized workspace that not only streamlines your work but also makes it easier to collaborate with others and maintain the integrity of your biological data analysis.
+
+### Section #3: Write a Clean Code
+
+#### 3-1. Use Descriptive Variable and Function Names:
+
+Use meaningful variable and function names to make the code self-explanatory. In computer programming, variable naming conventions are important for code readability and maintainability. Here are some general guidelines for naming variables:
+
+
+**Case Sensitivity**: In most programming languages, variable names are case-sensitive. This means that "myVariable" and "myvariable" are considered two different variables. It's a good practice to choose one convention for your variable names and stick to it. There are two common conventions:
+
+> <span style="font-size: 90%;">**Camel Case**: In camel case, the first letter of the variable name starts with a lowercase letter, and subsequent words within the name are capitalized. Example: myVariableName.</span>
+> 
+> <span style="font-size: 90%;">**Snake Case**: In snake case, words are separated by underscores, and all letters are lowercase. Example: my_variable_name.</span>
+
+**Descriptive Names**: Variable names should be descriptive and provide information about the variable's purpose. Short, meaningful names are preferred over overly long names. Aim for a balance between clarity and brevity.
+
+Bad variable name
+```{r  message=TRUE, warning = FALSE}
+
+x <- c(1,3,5,6,3)
+```
+
+ Good variable name
+```{r message=TRUE, warning = FALSE}
+grades_of_students <- c(1,3,5,6,3)
+```
+
+**Avoid Reserved Words**: Avoid using reserved words or keywords that have special meanings in the programming language as variable names. For example, in R, you shouldn't use `if`,`else`, `function`,`while`, and `repeat` as a variable name.
+
+**Use of Letters and Numbers**: Variable names can include letters, numbers, and underscores (in most languages). However, they should start with a letter and not a number.
+
+**Consistency**: Maintain consistency in naming conventions throughout your codebase. If you choose camel case for one variable, use it consistently for all variables.
+
+**Meaningful Prefixes**: In some cases, it can be helpful to use prefixes to indicate the variable's type or scope. For example, "str_name" for a string variable or "global_variable" for a global variable.
+
+**Avoid Single-Letter Names**: While single-letter variable names like "i" for loop counters are common and acceptable in certain contexts, they should be used sparingly and only when their purpose is clear.
+
+**Use of Abbreviations**: Abbreviations can be used if they are widely recognized and do not sacrifice clarity. For example, "num" for "number" or "max" for "maximum."
+
+
+Summary of the above:
+```{r, results='asis', echo=FALSE}
+# Use kable to create a table directly
+knitr::kable(
+  data.frame(
+    "Coding Convention" = c(
+      "Avoid Reserved Words",
+      "Use of Letters and Numbers",
+      "Consistency",
+      "Meaningful Prefixes",
+      "Avoid Single-Letter Names",
+      "Use of Abbreviations"
+    ),
+    "Bad Example" = c(
+      "Useing `if` as a variable name ",
+      "Useing 4thQuarter ",
+      "Useing studentName and StudentAge ",
+      "Useing int_age",
+      "Useing i for a variable name ",
+      "Useing n for number"
+    ),
+    "Good Example" = c(
+      "Avoid using `if` as a variable name (Avoid)",
+      "Use quarter_4 (Descriptive)",
+      "Use student_name and student_age (Consistent)",
+      "Use age (Descriptive)",
+      "Use loop_counter when purpose is clear (Descriptive)",
+      "Use num for number (Widely recognized and clear)"
+    )
+  ),
+  format = "markdown"
+)
+```
+
+#### 3-2. Commenting and R code seperation:
+
+Comment to  clarify code the. Use comments to describe the purpose of code blocks or complex operations. Use '#' symbol to indicate the start of a comment within your code. Comments are used to provide explanations, document code, and make it more understandable. To create a comment, simply place the '#' symbol at the beginning of a line, and any text following it on the same line is considered a comment and is not executed as code. It's essential to use comments judiciously to enhance code readability and assist others (or your future self) in understanding the code's logic and purpose.
+In RStudio, you can use keyboard shortcuts to quickly comment and uncomment code blocks. Here are the common keyboard shortcuts for commenting code in both Mac and Windows versions of RStudio:
+Mac: Command + Shift + C
+Windows: Ctrl + Shift + C
+
+Bad Example:
+```{r}
+avg_age <- mean(grades_of_students)
+
+```
+
+
+Bad Example:
+```{r}
+# Calculate the average age of students
+avg_age <- mean(grades_of_students)
+
+# This code calculates the average age of students.
+```
+
+When writing code in R, it's essential to maintain a clear and organized structure for better readability and maintainability. One way to achieve this is by dividing your code into sections and annotating them appropriately. The `bannerCommenter` package in R is a useful tool for adding section headers and comments to your code, making it more organized and understandable.
+```{r message=FALSE,}
+# In my codes I use word "section", and "sub" to divide the code body into meaningful parts.
+#Here I have introduced the type of separators for each of the divisions:
+
+# Section line types:
+#   For main sections: e.g.                                 Section 3           ##*****************
+#   For subsections: e.g.                                   Section 3-1         ##=================
+#   For sub-subsections: e.g.                               Section "3-1-1"     ##------------------
+#   For sub-sub-subsections: e.g.                           Section 3-1-1-1"    ##...................
+#   For sub-sub-sub-subsections: e.g.                       Section 3-1-1-1-1"  ##|||||||||||||||||||
+
+```
+
+```{r message=FALSE,}
+
+
+banner("R Code for Students participating in R course  ",
+       "Code Written by: Ali Hashemi ","Version:  0.0.0 ", 
+       "Email: ali.hashemi@unibe.ch",
+       "Date:18 Oct 2023", emph = TRUE,bandChar="#", numLines =3,leftSideHashes=3)
+
+banner("Section #1:Session preparation", emph = FALSE,bandChar="*", numLines =2,leftSideHashes=2)
+banner("This is an example", emph = FALSE,bandChar="?", numLines =1,leftSideHashes=2)
+
+```
+
+
+#### 3-3. Indentation and Formatting for Readability in R:
+When writing code in R, it's not just about getting the correct results; it's also about making your code easily readable and understandable. Proper indentation and formatting play a crucial role in achieving this goal.
+
+Here's why consistent indentation and formatting are important:
+
+**Readability**: Well-formatted code is easier to read, both for you and anyone else who might be reviewing your code. This becomes especially important when working on collaborative projects.
+
+**Debugging**: Properly indented and formatted code can help you quickly spot syntax errors or logical issues in your code. It simplifies the process of debugging.
+
+**Maintainability**: As your codebase grows, maintaining and updating your code becomes more challenging. Good formatting practices make it easier to understand and modify your code as needed.
+
+Use white space (spaces and empty lines) to break code into logical blocks and improve readability.
+
+Example with White Space:
+```{r}
+
+# Function to calculate the sum of squares
+sum_of_squares <- function(x) {
+  squares <- x^2
+  total <- sum(squares)
+  return(total)
+}
+
+```
+
+Example without White Space:
+```{r}
+#Function to calculate the sum of squares
+sum_of_squares <- function(x){
+squares <- x^2
+total <- sum(squares)
+return(total)
+}
+
+```
+
+
+Example of a too good coding :
+```{r}
+# Function to calculate the sum of squares
+sum_of_squares <- function(x) {             # comment comment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment
+  squares <- x^2                            # commentcomment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment
+  total <- sum(squares)                     # commentcomment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment
+  return(total)                             # commentcomment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment
+}
+```
+
+### Section #4: Diagnosing the Data Problems
+
+#### 4-1.  Data Type Guidelines (Constraints)
+You might have come across various data types, including text, numerical values, categories, and date-time information. It's important to handle each of these data types correctly because using an incorrect data type for a variable can potentially impact the accuracy of our analysis.
+
+---
+
+
+
+| Data Type     | Description                                       | Example                               |
+|---------------|---------------------------------------------------|---------------------------------------|
+| Numeric       | Numerical values (integers or doubles)           | `1, 2.5, 3, 4.7, 5`                  |
+| Character     | Text or strings of characters                    | `"ATCG", "GCTA", "TATA", "AGCG", "CTAG"` |
+| Logical       | "TRUE" or "FALSE" values                         | `TRUE, FALSE, TRUE, TRUE, FALSE`      |
+| Factor        | Categorical variables with distinct levels       | `A, B, AB, O, A`                      |
+| Date and Time | Date and time information                        | `2023-09-27 08:00:00, 2023-09-28 12:30:00, 2023-09-29 15:45:00` |
+| List          | Versatile data structure with mixed data types   | List of mixed data                    |
+| Matrix/Array  | Multi-dimensional data structures                | Matrix or array data                  |
+| Data Frame    | Structured data with columns of varying data types | Data frame with columns for genes, samples, measurements |
+| Vector        | Constrained to a specific data type              | Vector of protein concentrations       |
+| NULL          | Represents the absence of data or missing values | Missing data for a particular experiment |
+
+
+```{r}
+# Numeric
+numeric_column <- c(1, 2.5, 3, 4.7, 5)
+numeric_column
+```
+
+```{r}
+# Character
+character_column <- c("ATCG", "GCTA", "TATA", "AGCG", "CTAG")
+character_column
+```
+
+```{r}
+# Logical
+mutation_logical_column <- c(TRUE, FALSE, TRUE, TRUE, FALSE)
+mutation_logical_column
+```
+
+```{r}
+# Factor
+blood_group_factor_column <- factor(c("A", "B", "AB", "O", "A","AB", "O", "A"),
+                        levels = c("A", "B", "AB", "O"))
+blood_group_factor_column
+```
+
+```{r}
+# Date and Time
+experiment_date_time_column <- as.POSIXct(c("2023-09-27 08:00:00", "2023-09-28 12:30:00",
+                                 "2023-09-29 15:45:00", "2023-09-30 10:15:00",
+                                 "2023-10-01 14:00:00"))
+experiment_date_time_column
+```
+
+```{r}
+# List
+list_column <- list(c(1, 2, 3), 
+                    c("bladder", "heart", "brain"),
+                    c(TRUE, FALSE, TRUE))
+list_column
+```
+
+```{r}
+# Matrix/Array
+matrix_column <- matrix(1:12, nrow = 3, ncol = 4)
+print(matrix_column)
+```
+
+```{r}
+# Data Frame
+data_frame <- data.frame(
+  Gene = c("GeneA", "GeneB", "GeneC", "GeneA","GeneB", "GeneC"),
+  Sample = c("Sample1", "Sample1", "Sample1", "Sample2", "Sample2","Sample2"),
+  Measurement = c(4.5, 3.3, 2.1, 112.7, 142.0, 110.0)
+)
+print(data_frame)
+```
+
+```{r}
+# Vector
+vector_column <- c(0.5, 1.2, 2.0, 0.8, 1.5)
+
+# Create a data frame with missing values
+missing_values_df <- data.frame(
+  ID = 1:5,
+  Value = c(10, NA, 25, NA, 42)
+)
+
+# Print the data frame
+print(missing_values_df)
+```
+
+
+
+### Section #5: different joing stategies
+
+```{r}
+# Create a data frame for table_A
+# How many cups of coffee do your R course lecturers drink per day?
+table_A <- data.frame(
+ Names = c("Ali", "Daniel", "Tural", "PoPo"),
+ Coffee_Consumption = c(5, 4, 2, 0)
+)
+
+# Print the table
+print(table_A)
+```
+
+```{r}
+# Create a data frame for table_B 
+# On a scale of 1 to 10, how much procrastination do your R course lectures involve?
+table_B <- data.frame(
+ Names = c("Ali", "Daniel", "Tural", "JoJo"),
+ Procrastination = c(8, 2, 1, 0)
+)
+
+# Print the table
+print(table_B)
+```
+
+
+```{r}
+# Perform different types of joins with table_A as the left data frame and table_B as the right data frame
+# 1. Left Join between table_A and table_B
+left_result_A_B <- left_join(table_A, table_B, by = "Names")
+
+# 2. Inner Join between table_A and table_B
+inner_result_A_B  <- inner_join(table_A, table_B, by = "Names")
+
+# 3. Right Join between table_A and table_B
+right_result_A_B  <- right_join(table_A, table_B, by = "Names")
+
+# 4. Full Join 
+full_result_A_B  <- full_join(table_A, table_B, by = "Names")
+
+# 5.  semi_join between table_A and table_B
+semi_joined_data_A_B  <- semi_join(table_A, table_B, by = "Names")
+
+# 6.  anti_join between table_A and table_B
+anti_joined_data_A_B  <- anti_join(table_A, table_B, by = "Names")
+
+# Print the results
+
+print(left_result_A_B )
+
+
+print(inner_result_A_B )
+
+
+print(right_result_A_B )
+
+
+print(full_result_A_B)
+
+# Print the results
+
+print(semi_joined_data_A_B)
+
+
+print(anti_joined_data_A_B)
+
+```
+
+
+
+## Use the na.omit() function to remove rows with NA values
+```{r  include=TRUE}
+#patients_cleaned_method_2 <- na.omit(patients_cleaned_method_2)
+
+```
+
+
+
+
+
